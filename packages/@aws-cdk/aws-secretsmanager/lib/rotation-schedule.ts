@@ -265,6 +265,7 @@ export class HostedRotation implements ec2.IConnectable {
   }
 
   private _connections?: ec2.Connections;
+  private HostedRotationLambdaArn?: string;
 
   private constructor(
     private readonly type: HostedRotationType,
@@ -304,6 +305,15 @@ export class HostedRotation implements ec2.IConnectable {
       ? secret.excludeCharacters ?? DEFAULT_PASSWORD_EXCLUDE_CHARS
       : DEFAULT_PASSWORD_EXCLUDE_CHARS;
 
+    if (this.props.functionName) {
+      this.HostedRotationLambdaArn = Stack.of(scope).formatArn({
+        resource: 'lambda',
+        service: 'function',
+        region: Stack.of(scope).region,
+        resourceName: this.props.functionName,
+      });
+    }
+
     return {
       rotationType: this.type.name,
       kmsKeyArn: secret.encryptionKey?.keyArn,
@@ -330,6 +340,16 @@ export class HostedRotation implements ec2.IConnectable {
     }
 
     return this._connections;
+  }
+
+  /**
+   *  ARN of Lambda created for HostedRotation
+   */
+  public get hostedRotationLambdaArn() {
+    if (this.props.functionName) {
+      return this.HostedRotationLambdaArn;
+    }
+    throw new Error('functionName props is mandatory for HostedRotation to return ARN');
   }
 }
 
